@@ -64,8 +64,8 @@ class Qq
     cxt ?= process._qq_cxt
     new QqPromise(cxt, Q.reject(reason))
 
-  nfcall: (### fn, ...args ###) =>
-    new QqPromise(process._qq_cxt, Q.nfcall(arguments))
+  nfcall: (fn, args...) =>
+    new QqPromise(process._qq_cxt, Q(fn).nfapply(args))
 
   ninvoke: (args...) =>
     new QqPromise(process._qq_cxt, Q.ninvoke.apply(Q, args))
