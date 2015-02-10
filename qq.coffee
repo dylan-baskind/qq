@@ -1,4 +1,4 @@
-Q = require 'Q'
+Q = require 'q'
 
 # Wrapper for Q promises that preserves a context along a
 # promise chain. A context could be thought of as a logical
