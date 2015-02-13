@@ -1,6 +1,6 @@
 {
   "name": "qq",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Wrapper of kriskowal's Q library with context passed through promise chains",
   "main": "qq.coffee",
   "scripts": {
