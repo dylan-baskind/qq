@@ -77,6 +77,10 @@ class Qq
     cxt ?= process._qq_cxt
     Q.all promises
 
+  when: (promises, cxt) =>
+    cxt ?= process._qq_cxt
+    Q.when promises
+
   catch: (object, rejected, cxt) =>
     cxt ?= process._qq_cxt
     Q.catch(object, rejected)
