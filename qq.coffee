@@ -69,6 +69,24 @@ class Qq
   nfcall: (fn, args...) =>
     new QqPromise(process._qq_cxt, Q(fn).nfapply(args))
 
+  denodeify: (fn) =>
+    (args...) =>
+      deferred = @defer()
+      handler = (err, res) =>
+        if err?
+          deferred.reject err
+        else
+          deferred.resolve res
+
+      args.push handler
+
+      Q(fn).fapply(args)
+
+      return deferred.promise
+
+  nfbind: (fn) =>
+    @denodeify(fn)
+
   ninvoke: (args...) =>
     new QqPromise(process._qq_cxt, Q.ninvoke.apply(Q, args))
 
