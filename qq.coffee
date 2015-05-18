@@ -10,11 +10,13 @@ Q = require 'q'
 # to inherit most of the methods, as we really only need to wrap then().
 class QqPromise
   constructor: (@cxt, @promise) ->
-    #if not @cxt
-      #throw new Error("No cxt provided")
-    if process.DEV != false
-      @promise.fail (e) ->
-        console.log '(Promise failed, ' + e.toString().substring(0, 50).replace(/\n/, '') + '...)'
+    if @cxt?.logger?
+      logger = @cxt.logger
+    else
+      logger = console
+
+    @promise.fail (e) ->
+        logger.log "(Promise failed, #{e.toString().replace(/\n/, ' ')})"
         throw e
 
   then: (fulfilled, rejected, progressed) =>
