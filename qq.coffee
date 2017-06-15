@@ -36,7 +36,11 @@ class QqPromise
 
   done: -> @promise.done()
 
-  catch: (rejected) => @promise.catch(rejected)
+  catch: (rejected) => @then null, rejected, null
+
+  finally: (fn) => @promise.finally fn
+
+  spread: (fulfilled, rejected) => @promise.spread fulfilled, rejected
 
   _wrap: (fn) ->
     (v) =>
@@ -95,11 +99,18 @@ class Qq
 
   all: (promises, cxt) =>
     cxt ?= process._qq_cxt
-    Q.all promises
+    result = Q.all promises
+    return new QqPromise(cxt, result)
+ 
+  race: (promises, cxt) =>
+    cxt ?= process._qq_cxt
+    result = Q.race promises
+    return new QqPromise(cxt, result)
 
   when: (promises, cxt) =>
     cxt ?= process._qq_cxt
-    Q.when promises
+    result = Q.when promises
+    return new QqPromise(cxt, result)
 
   catch: (object, rejected, cxt) =>
     cxt ?= process._qq_cxt
@@ -138,5 +149,13 @@ class Qq
       return process._qq_cxt
     else
       throw new Error('No current qq context')
+
+  Promise: (resolver) =>
+    deferred = @defer()
+    try
+      resolver(deferred.resolve, deferred.reject, deferred.notify)
+    catch reason
+      deferred.reject reason
+    return deferred.promise
 
 module.exports = qq = new Qq
