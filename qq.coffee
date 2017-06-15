@@ -10,11 +10,13 @@ Q = require 'q'
 # to inherit most of the methods, as we really only need to wrap then().
 class QqPromise
   constructor: (@cxt, @promise) ->
-    #if not @cxt
-      #throw new Error("No cxt provided")
-    if process.DEV != false
-      @promise.fail (e) ->
-        console.log '(Promise failed, ' + e.toString().substring(0, 50).replace(/\n/, '') + '...)'
+    if @cxt?.logger?
+      logger = @cxt.logger
+    else
+      logger = console
+
+    @promise.fail (e) ->
+        logger.log "(Promise failed, #{e.toString().replace(/\n/, ' ')})"
         throw e
 
   then: (fulfilled, rejected, progressed) =>
@@ -34,7 +36,11 @@ class QqPromise
 
   done: -> @promise.done()
 
-  catch: (rejected) => @promise.catch(rejected)
+  catch: (rejected) => @then null, rejected, null
+
+  finally: (fn) => @promise.finally fn
+
+  spread: (fulfilled, rejected) => @promise.spread fulfilled, rejected
 
   _wrap: (fn) ->
     (v) =>
@@ -67,6 +73,24 @@ class Qq
   nfcall: (fn, args...) =>
     new QqPromise(process._qq_cxt, Q(fn).nfapply(args))
 
+  denodeify: (fn) =>
+    (args...) =>
+      deferred = @defer()
+      handler = (err, res) =>
+        if err?
+          deferred.reject err
+        else
+          deferred.resolve res
+
+      args.push handler
+
+      Q(fn).fapply(args)
+
+      return deferred.promise
+
+  nfbind: (fn) =>
+    @denodeify(fn)
+
   ninvoke: (args...) =>
     new QqPromise(process._qq_cxt, Q.ninvoke.apply(Q, args))
 
@@ -75,11 +99,18 @@ class Qq
 
   all: (promises, cxt) =>
     cxt ?= process._qq_cxt
-    Q.all promises
+    result = Q.all promises
+    return new QqPromise(cxt, result)
+ 
+  race: (promises, cxt) =>
+    cxt ?= process._qq_cxt
+    result = Q.race promises
+    return new QqPromise(cxt, result)
 
   when: (promises, cxt) =>
     cxt ?= process._qq_cxt
-    Q.when promises
+    result = Q.when promises
+    return new QqPromise(cxt, result)
 
   catch: (object, rejected, cxt) =>
     cxt ?= process._qq_cxt
@@ -118,5 +149,13 @@ class Qq
       return process._qq_cxt
     else
       throw new Error('No current qq context')
+
+  Promise: (resolver) =>
+    deferred = @defer()
+    try
+      resolver(deferred.resolve, deferred.reject, deferred.notify)
+    catch reason
+      deferred.reject reason
+    return deferred.promise
 
 module.exports = qq = new Qq
